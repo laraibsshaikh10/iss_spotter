@@ -14,12 +14,14 @@ const fetchMyIP = function(callback) {
   request(url, (error, response, body) => {
     //if error occurs while fetching id data
     if (error) {
-      return callback("Error while requesting IP data: " + error, null);
+      callback("Error while requesting IP data: " + error, null);
+      return;
     }
     //if response code is anything other than 200, show an error
     if (response.statusCode !== 200) {
       const msg = `Status Code ${response.statusCode} when fetching IP. Response: ${body}`;
-      return callback(Error(msg), null);
+      callback(Error(msg), null);
+      return;
     }
     //parse and extract the IP address using JSON and then pass that through to the callback (as the second argument) if there is no error
     try {
@@ -33,4 +35,43 @@ const fetchMyIP = function(callback) {
 
 };
 
-module.exports = { fetchMyIP };
+const fetchCoordsByIP = function(ipString, callback) {
+  // const url = `http://ipwhois/app/json/${ipString}`;
+  const url = `http://ipwho.is/${ipString}`;
+  request(url, (error, response, body) => {
+    if (error) {
+      callback(error, null);
+      return;
+    }
+  
+    //if response code is anything other than 200, show an error
+    if (response.statusCode !== 200) {
+      const message = `Status Code ${response.statusCode} when fetching IP. Response: ${body}`;
+      callback(Error(message), null);
+      return;
+    }
+    try {
+      //parse the data and then extract latitude and longitude values and insert them into the callback
+      const data = JSON.parse(body);
+
+      //if API shows an unsuccessful request, result in an error
+      if (!data.success) {
+        callback(new Error(`The IP address: ${ipString} is invalid`, null));
+        return;
+      }
+
+      const { latitude, longitude} = data;
+      //pass the latitude and longitude values as an object via callback
+      callback(null, {latitude, longitude});
+      //if there's an error while parsing
+    } catch (parseError) {
+      callback(parseError, null);
+    }
+  });
+
+};
+
+
+
+
+module.exports = { fetchMyIP, fetchCoordsByIP };
